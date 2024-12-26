@@ -1,5 +1,6 @@
 package dev.plasticstraw.inf_music.mixin;
 
+import net.minecraft.client.sound.MusicInstance;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,10 +20,10 @@ public class DisableMusic {
         InfiniteMusic.TRACKER.tick();
     }
 
-    @Inject(method = "Lnet/minecraft/client/sound/MusicTracker;play(Lnet/minecraft/sound/MusicSound;)V", at = @At("HEAD"), cancellable = true)
-    private void redirectPlay(MusicSound musicSound, CallbackInfo ci) {
+    @Inject(method = "Lnet/minecraft/client/sound/MusicTracker;play(Lnet/minecraft/client/sound/MusicInstance;)V", at = @At("HEAD"), cancellable = true)
+    private void redirectPlay(MusicInstance musicInstance, CallbackInfo ci) {
         ci.cancel();
-        InfiniteMusic.TRACKER.play(musicSound);
+        InfiniteMusic.TRACKER.play(musicInstance.music());
     }
 
     @Inject(method = "Lnet/minecraft/client/sound/MusicTracker;stop(Lnet/minecraft/sound/MusicSound;)V", at = @At("HEAD"), cancellable = true)

@@ -94,7 +94,7 @@ public class InfiniteMusic implements ClientModInitializer {
         private TickCondition evaluatedTickCondition;
 
         public void tick() {
-            musicSound = client.getMusicType();
+            musicSound = client.getMusicInstance().music();
 
             if (evaluatedTickCondition == null || evaluatedTickCondition.musicSoundType != musicSound) {
                 evaluatedTickCondition = fullTick();
@@ -106,7 +106,7 @@ public class InfiniteMusic implements ClientModInitializer {
         }
 
         public TickCondition fullTick() {
-            MusicSound musicSound = client.getMusicType();
+            MusicSound musicSound = client.getMusicInstance().music();
 
             if (fixForMcBug()) {
                 return new TickCondition(null);
