@@ -10,11 +10,13 @@ import dev.plasticstraw.inf_music.config.InfiniteMusicConfig;
 import dev.plasticstraw.inf_music.config.InfiniteMusicConfig.MusicOptions;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.sound.MusicInstance;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.sound.MusicSound;
 import net.minecraft.sound.MusicType;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
@@ -28,7 +30,7 @@ public class InfiniteMusic implements ClientModInitializer {
     public static final List<SoundInstance> musicDiscInstanceList = new ArrayList<SoundInstance>();
     public static final List<SoundInstance> musicInstanceList = new ArrayList<SoundInstance>();
     public static MinecraftClient client = MinecraftClient.getInstance();
-    public static SoundInstance musicInstance;
+    public static SoundInstance soundInstance;
 
     @Override
     public void onInitializeClient() {
@@ -81,7 +83,6 @@ public class InfiniteMusic implements ClientModInitializer {
     }
 
     public static class Tracker {
-
         @Nullable
         private SoundInstance currentMusicPlaying;
         private final Random random = Random.create();
@@ -90,6 +91,7 @@ public class InfiniteMusic implements ClientModInitializer {
         private boolean hasJoinedWorld = true;
         private boolean readyToPlay = false;
         private MusicSound musicSound;
+        private float volume = 1.0f;
         @Nullable
         private TickCondition evaluatedTickCondition;
 
@@ -103,12 +105,16 @@ public class InfiniteMusic implements ClientModInitializer {
             if (evaluatedTickCondition.tick()) {
                 evaluatedTickCondition = null;
             }
+
+            float instanceVolume = client.getMusicInstance().volume();
+            tryToFadeVolume(instanceVolume);
         }
 
         public TickCondition fullTick() {
-            MusicSound musicSound = client.getMusicInstance().music();
+            MusicInstance musicInstance = client.getMusicInstance();
+            MusicSound musicSound = musicInstance.music();
 
-            if (fixForMcBug()) {
+            if (fixForMcBug() || musicSound == null) {
                 return new TickCondition(null);
             }
 
@@ -116,6 +122,7 @@ public class InfiniteMusic implements ClientModInitializer {
                 stop(musicSound);
                 return new TickCondition(musicSound);
             }
+
 
             if (musicSound.shouldReplaceCurrentMusic() && !isPlayingType(musicSound)) {
                 // should music start immediately and is not playing self?
@@ -157,7 +164,7 @@ public class InfiniteMusic implements ClientModInitializer {
                         }
 
                         stop();
-                        play(musicSound);
+                        play(musicInstance);
                         return true;
                     }
                 };
@@ -183,13 +190,44 @@ public class InfiniteMusic implements ClientModInitializer {
                         readyToPlay = true;
                     } else {
                         stop();
-                        play(musicSound);
+                        play(musicInstance);
                     }
 
                     return true;
                 }
 
             };
+
+        }
+
+        private boolean tryToFadeVolume(float volume) {
+            if (this.currentMusicPlaying == null) {
+                return false;
+            } else if (this.volume == volume) {
+                return true;
+            } else {
+                if (this.volume < volume) {
+                    this.volume += MathHelper.clamp(this.volume, 5.0E-4F, 0.005F);
+                    if (this.volume > volume) {
+                        this.volume = volume;
+                    }
+                } else {
+                    this.volume = 0.03F * volume + 0.97F * this.volume;
+                    if (Math.abs(this.volume - volume) < 1.0E-4F || this.volume < volume) {
+                        this.volume = volume;
+                    }
+                }
+
+                this.volume = MathHelper.clamp(this.volume, 0.0F, 1.0F);
+                if (this.volume <= 1.0E-4F) {
+                    this.stop();
+                    return false;
+                } else {
+                    System.out.println("volume set to:" + this.volume);
+                    client.getSoundManager().setVolume(this.currentMusicPlaying, this.volume);
+                    return true;
+                }
+            }
         }
 
         private class TickCondition {
@@ -207,12 +245,14 @@ public class InfiniteMusic implements ClientModInitializer {
 
         }
 
-        public void play(MusicSound type) {
+        public void play(MusicInstance musicInstance) {
             if (isDiscMusicBlocking()) {
                 return;
             }
 
-            if (type.getSound() == SoundManager.MISSING_SOUND) {
+            MusicSound musicSound = musicInstance.music();
+
+            if (musicSound != null && musicSound.getSound() == SoundManager.MISSING_SOUND) {
                 timeSinceLastSong = Integer.MIN_VALUE;
                 return;
             }
@@ -231,9 +271,14 @@ public class InfiniteMusic implements ClientModInitializer {
                 return;
             }
 
-            currentMusicPlaying = PositionedSoundInstance.music(type.getSound().value());
-            InfiniteMusic.musicInstance = currentMusicPlaying;
-            client.getSoundManager().play(currentMusicPlaying);
+            currentMusicPlaying = PositionedSoundInstance.music(musicSound.getSound().value());
+
+            if (this.currentMusicPlaying.getSound() != SoundManager.MISSING_SOUND) {
+                client.getSoundManager().play(this.currentMusicPlaying);
+                client.getSoundManager().setVolume(this.currentMusicPlaying, musicInstance.volume());
+            }
+
+            this.volume = musicInstance.volume();
         }
 
         public void stop(MusicSound type) {

@@ -23,7 +23,7 @@ public class DisableMusic {
     @Inject(method = "Lnet/minecraft/client/sound/MusicTracker;play(Lnet/minecraft/client/sound/MusicInstance;)V", at = @At("HEAD"), cancellable = true)
     private void redirectPlay(MusicInstance musicInstance, CallbackInfo ci) {
         ci.cancel();
-        InfiniteMusic.TRACKER.play(musicInstance.music());
+        InfiniteMusic.TRACKER.play(musicInstance);
     }
 
     @Inject(method = "Lnet/minecraft/client/sound/MusicTracker;stop(Lnet/minecraft/sound/MusicSound;)V", at = @At("HEAD"), cancellable = true)

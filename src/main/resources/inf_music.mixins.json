@@ -1,9 +1,14 @@
 {
-    "required": true,
-    "package": "dev.plasticstraw.inf_music.mixin",
-    "compatibilityLevel": "JAVA_17",
-    "mixins": ["DisableMusic", "MusicDelay", "UpdateMusic", "ValidateSounds"],
-    "injectors": {
-        "defaultRequire": 1
-    }
+  "required": true,
+  "package": "dev.plasticstraw.inf_music.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "DisableMusic",
+    "MusicDelay",
+    "UpdateMusic",
+    "ValidateSounds"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

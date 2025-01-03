@@ -21,7 +21,7 @@ public class ValidateSounds {
             InfiniteMusic.musicDiscInstanceList.add(soundInstance);
 
             if (InfiniteMusic.CONFIG.pauseForDiscMusic) {
-                MinecraftClient.getInstance().getSoundManager().stop(InfiniteMusic.musicInstance);
+                MinecraftClient.getInstance().getSoundManager().stop(InfiniteMusic.soundInstance);
             }
         }
     }
