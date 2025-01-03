@@ -200,33 +200,30 @@ public class InfiniteMusic implements ClientModInitializer {
 
         }
 
-        private boolean tryToFadeVolume(float volume) {
+        private void tryToFadeVolume(float volume) {
             if (this.currentMusicPlaying == null) {
-                return false;
-            } else if (this.volume == volume) {
-                return true;
+                return;
+            }
+            if (this.volume == volume) {
+                return;
+            }
+            if (this.volume < volume) {
+                this.volume += MathHelper.clamp(this.volume, 5.0E-4F, 0.005F);
+                if (this.volume > volume) {
+                    this.volume = volume;
+                }
             } else {
-                if (this.volume < volume) {
-                    this.volume += MathHelper.clamp(this.volume, 5.0E-4F, 0.005F);
-                    if (this.volume > volume) {
-                        this.volume = volume;
-                    }
-                } else {
-                    this.volume = 0.03F * volume + 0.97F * this.volume;
-                    if (Math.abs(this.volume - volume) < 1.0E-4F || this.volume < volume) {
-                        this.volume = volume;
-                    }
+                this.volume = 0.03F * volume + 0.97F * this.volume;
+                if (Math.abs(this.volume - volume) < 1.0E-4F || this.volume < volume) {
+                    this.volume = volume;
                 }
+            }
 
-                this.volume = MathHelper.clamp(this.volume, 0.0F, 1.0F);
-                if (this.volume <= 1.0E-4F) {
-                    this.stop();
-                    return false;
-                } else {
-                    System.out.println("volume set to:" + this.volume);
-                    client.getSoundManager().setVolume(this.currentMusicPlaying, this.volume);
-                    return true;
-                }
+            this.volume = MathHelper.clamp(this.volume, 0.0F, 1.0F);
+            if (this.volume <= 1.0E-4F) {
+                this.stop();
+            } else {
+                client.getSoundManager().setVolume(this.currentMusicPlaying, this.volume);
             }
         }
 
