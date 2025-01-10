@@ -106,8 +106,14 @@ public class InfiniteMusic implements ClientModInitializer {
                 evaluatedTickCondition = null;
             }
 
-            float instanceVolume = client.getMusicInstance().volume();
-            tryToFadeVolume(instanceVolume);
+            if(isDiscMusicBlocking()) {
+                // fade music out if music disc is playing
+                tryToFadeVolume(-1f, -1f);
+           } else {
+                // otherwise use normal music fading
+                float instanceVolume = client.getMusicInstance().volume();
+                tryToFadeVolume(instanceVolume);
+            }
         }
 
         public TickCondition fullTick() {
@@ -186,9 +192,7 @@ public class InfiniteMusic implements ClientModInitializer {
                         return false;
                     }
 
-                    if (isDiscMusicBlocking()) {
-                        readyToPlay = true;
-                    } else {
+                    if (!isDiscMusicBlocking()) {
                         stop();
                         play(musicInstance);
                     }
@@ -200,7 +204,27 @@ public class InfiniteMusic implements ClientModInitializer {
 
         }
 
+        /**
+         * Slowly fades the currently playing music to the specified volume over time. Music will be stopped once the
+         * volume reaches 0
+         *
+         * @param volume the volume to fade to
+         *
+         * @see Tracker#tryToFadeVolume(float, float)
+         */
         private void tryToFadeVolume(float volume) {
+            tryToFadeVolume(volume, 0.0001f);
+        }
+        /**
+         * Slowly fades the currently playing music to the specified volume over time
+         *
+         * @param volume the volume to fade to
+         * @param stopAtVolume once the music volume is lower than this volume, the music will be stopped. If a
+         *                     negative value is given the music will never stop and will continue to play silently
+         *
+         * @see Tracker#tryToFadeVolume(float)
+         */
+        private void tryToFadeVolume(float volume, float stopAtVolume) {
             if (this.currentMusicPlaying == null) {
                 return;
             }
@@ -208,19 +232,19 @@ public class InfiniteMusic implements ClientModInitializer {
                 return;
             }
             if (this.volume < volume) {
-                this.volume += MathHelper.clamp(this.volume, 5.0E-4F, 0.005F);
+                this.volume += MathHelper.clamp(this.volume, 0.0005F, 0.005F);
                 if (this.volume > volume) {
                     this.volume = volume;
                 }
             } else {
                 this.volume = 0.03F * volume + 0.97F * this.volume;
-                if (Math.abs(this.volume - volume) < 1.0E-4F || this.volume < volume) {
+                if (Math.abs(this.volume - volume) < 0.0001f || this.volume < volume) {
                     this.volume = volume;
                 }
             }
 
             this.volume = MathHelper.clamp(this.volume, 0.0F, 1.0F);
-            if (this.volume <= 1.0E-4F) {
+            if (this.volume <= stopAtVolume && stopAtVolume > 0) {
                 this.stop();
             } else {
                 client.getSoundManager().setVolume(this.currentMusicPlaying, this.volume);
@@ -271,6 +295,7 @@ public class InfiniteMusic implements ClientModInitializer {
             currentMusicPlaying = PositionedSoundInstance.music(musicSound.getSound().value());
 
             if (this.currentMusicPlaying.getSound() != SoundManager.MISSING_SOUND) {
+                InfiniteMusic.soundInstance = this.currentMusicPlaying;
                 client.getSoundManager().play(this.currentMusicPlaying);
                 client.getSoundManager().setVolume(this.currentMusicPlaying, musicInstance.volume());
             }
